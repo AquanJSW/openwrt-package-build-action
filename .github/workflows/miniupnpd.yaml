@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Download OpenWrt SDK
         run: |
-          wget -q ${{ matrix.sdk }}
+          wget -${{ matrix.sdk }}
           FILENAME=$(basename ${{ matrix.sdk }})
           DIR_NAME=$(basename ${{ matrix.sdk }} .tar.xz)
           tar -xJf $FILENAME
@@ -34,9 +34,9 @@ jobs:
           ./scripts/feeds install -a
           wget -o feeds/packages/net/miniupnpd/patches/000-bypass-reserved-ip.patch $PATCH
           make defconfig
-          make package/miniupnpd/compile
+          make package/miniupnpd/compile -j
           IPK_FILE=$(find bin/packages -name "miniupnpd*.ipk" -type f)
-          cp $IPK_FILE $GITHUB_WORKSPACE
+          cp $IPK_FILE ${{ github.workspace }}
           IPK_NAME=$(basename $IPK_FILE)
           echo "IPK_NAME=$IPK_NAME" >> $GITHUB_OUTPUT
 
