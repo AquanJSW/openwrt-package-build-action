@@ -36,7 +36,7 @@ jobs:
           make defconfig
           make package/miniupnpd/compile -j
           IPK_FILE=$(find bin/packages -name "miniupnpd*.ipk" -type f)
-          cp $IPK_FILE ${{ github.workspace }}
+          cp $IPK_FILE ..
           IPK_NAME=$(basename $IPK_FILE)
           echo "IPK_NAME=$IPK_NAME" >> $GITHUB_OUTPUT
 
@@ -44,4 +44,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.build.outputs.IPK_NAME }}
-          path: ${{ github.workspace }}/${{ steps.build.outputs.IPK_NAME }}
+          path: ${{ steps.build.outputs.IPK_NAME }}
