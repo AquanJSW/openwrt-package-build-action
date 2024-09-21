@@ -51,6 +51,8 @@ jobs:
           cd $SDK_DIR
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          make defconfig
+          make
 
       - name: Cache SDK
         id: cache_sdk
@@ -68,6 +70,7 @@ jobs:
         id: build
         env:
           TARGET: ${{ matrix.target0 }}-${{ matrix.target1 }}
+          SDK_DIR: ${{ steps.prepare.outputs.SDK_DIR }}
         run: |
           cd $SDK_DIR
 
