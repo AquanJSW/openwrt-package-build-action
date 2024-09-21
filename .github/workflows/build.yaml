@@ -37,7 +37,7 @@ jobs:
           TARGET: ${{ matrix.target0 }}/${{ matrix.target1 }}
         run: |
           sdk_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/$SDK_FILENAME"
-          wget $sdk_url
+          wget -q $sdk_url
           DIR_NAME=$(basename $SDK_FILENAME .tar.xz)
           tar -xJf $SDK_FILENAME
           echo "SDK_DIR=$DIR_NAME" >> $GITHUB_ENV
