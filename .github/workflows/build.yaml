@@ -74,7 +74,8 @@ jobs:
 
           cp ../this_repo/build* ./
           chmod +x build.py
-          ./build.py
+          mkdir ../ipk/
+          ./build.py ../ipk/
 
       - name: Upload
         uses: actions/upload-artifact@v4
