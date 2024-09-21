@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import yaml
 import argparse
 
-type Url = str
+Url = str
 
 parser = argparse.ArgumentParser()
 parser.add_argument('ipk-dir', help='Output directory for ipk files')
