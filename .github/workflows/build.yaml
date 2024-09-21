@@ -4,9 +4,9 @@ jobs:
   build:
     strategy:
       matrix:
-        version: [23.05.4]
-        target0: [mediatek]
-        target1: [mt7622]
+        version: [23.05.4, 23.05.4]
+        target0: [mediatek, ramips]
+        target1: [mt7622, mt7621]
     runs-on: ubuntu-latest
     steps:
       - name: Get OpenWrt SDK checksum and URL
