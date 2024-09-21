@@ -1,0 +1,80 @@
+name: Build packages for OpenWrt with patches
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    strategy:
+      matrix:
+        version: [23.05.4]
+        target0: [mediatex]
+        target1: [mt7622]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get OpenWrt SDK checksum and URL
+        id: prepare
+        env:
+          VERSION: ${{ matrix.version }}
+          TARGET: ${{ matrix.target0 }}/${{ matrix.target1 }}
+        run: |
+          checksum_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/sha256sums"
+          wget $checksum_url
+          sdk_filename=$(grep sdk sha256sums | awk -F'*' '{print $2}')
+          sdk_checksum=$(grep sdk sha256sums | awk -F' ' '{print $1}')
+          echo "SDK_CHECKSUM=$sdk_checksum" >> $GITHUB_OUTPUT
+          echo "SDK_FILENAME=$sdk_filename" >> $GITHUB_OUTPUT
+
+      - name: Restore SDK cache
+        id: restore_sdk
+        uses: actions/cache/restore@v4
+        with:
+          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
+          path: ${{ steps.prepare.outputs.SDK_FILENAME }}
+
+      - name: Download and deploy OpenWrt SDK
+        if: steps.restore_sdk.outputs.cache-hit != 'true'
+        env:
+          SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
+          TARGET: ${{ matrix.target0 }}/${{ matrix.target1 }}
+        run: |
+          sdk_url="https://downloads.openwrt.org/releases/$SDK_FILENAME/targets/$TARGET/$SDK_FILENAME"
+          wget $sdk_url
+          DIR_NAME=$(basename $SDK_FILENAME .tar.xz)
+          tar -xJf $SDK_FILENAME
+          echo "SDK_DIR=$DIR_NAME" >> $GITHUB_ENV
+
+      - name: Cache SDK
+        id: cache_sdk
+        uses: actions/cache/store@v4
+        with:
+          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
+          path: ${{ steps.prepare.outputs.SDK_FILENAME }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          path: this_repo
+
+      - name: Build
+        id: build
+        env:
+          TARGET: ${{ matrix.target0 }}-${{ matrix.target1 }}
+        run: |
+          cp this_repo/diffconfigs/$TARGET $SDK_DIR/.config
+          cd $SDK_DIR
+
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+          cp this_repo/deploy_patches.sh .
+          chmod +x deploy_patches.sh
+          ./deploy_patches.sh
+
+          make defconfig
+          make -j
+          mkdir ../ipk
+          find bin/packages/ -name *.ipk -type f -exec cp {} ../ipk \;
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}
+          path: ipk/*.ipk
