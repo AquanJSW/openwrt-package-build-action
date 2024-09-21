@@ -70,7 +70,7 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          cp this_repo/deploy_patches.sh .
+          cp ../this_repo/deploy_patches.sh .
           chmod +x deploy_patches.sh
           ./deploy_patches.sh
 
