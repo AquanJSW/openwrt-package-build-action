@@ -8,7 +8,7 @@ import argparse
 Url = str
 
 parser = argparse.ArgumentParser()
-parser.add_argument('ipk-dir', help='Output directory for ipk files')
+parser.add_argument('ipk_dir', help='Output directory for ipk files')
 
 
 @dataclass

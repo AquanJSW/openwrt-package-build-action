@@ -19,15 +19,17 @@ jobs:
           wget $checksum_url
           sdk_filename=$(grep sdk sha256sums | awk -F'*' '{print $2}')
           sdk_checksum=$(grep sdk sha256sums | awk -F' ' '{print $1}')
+          sdk_dir=$(basename $sdk_filename .tar.xz)
           echo "SDK_CHECKSUM=$sdk_checksum" >> $GITHUB_OUTPUT
           echo "SDK_FILENAME=$sdk_filename" >> $GITHUB_OUTPUT
+          echo "SDK_DIR=$sdk_dir" >> $GITHUB_OUTPUT
 
       - name: Restore SDK cache
         id: restore_sdk
         uses: actions/cache/restore@v4
         with:
           key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
-          path: ${{ steps.prepare.outputs.SDK_FILENAME }}
+          path: ${{ steps.prepare.outputs.SDK_DIR }}
 
       - name: Download OpenWrt SDK
         if: steps.restore_sdk.outputs.cache-hit != 'true'
@@ -40,19 +42,22 @@ jobs:
           wget -q $sdk_url
 
       - name: Deploy SDK
+        if: steps.restore_sdk.outputs.cache-hit != 'true'
         env:
           SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
+          SDK_DIR: ${{ steps.prepare.outputs.SDK_DIR }}
         run: |
-          DIR_NAME=$(basename $SDK_FILENAME .tar.xz)
           tar -xJf $SDK_FILENAME
-          echo "SDK_DIR=$DIR_NAME" >> "$GITHUB_ENV"
+          cd $SDK_DIR
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
 
       - name: Cache SDK
         id: cache_sdk
         uses: actions/cache/save@v4
         with:
           key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
-          path: ${{ steps.prepare.outputs.SDK_FILENAME }}
+          path: ${{ steps.prepare.outputs.SDK_DIR }}
 
       - uses: actions/checkout@v4
         with:
@@ -64,12 +69,9 @@ jobs:
         env:
           TARGET: ${{ matrix.target0 }}-${{ matrix.target1 }}
         run: |
-          cp this_repo/diffconfigs/$TARGET $SDK_DIR/.config
           cd $SDK_DIR
 
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-
+          cp ../this_repo/diffconfigs/$TARGET $SDK_DIR/.config
           make defconfig
 
           cp ../this_repo/build* ./
