@@ -5,7 +5,7 @@ jobs:
     strategy:
       matrix:
         version: [23.05.4]
-        target0: [mediatex]
+        target0: [mediatek]
         target1: [mt7622]
     runs-on: ubuntu-latest
     steps:
