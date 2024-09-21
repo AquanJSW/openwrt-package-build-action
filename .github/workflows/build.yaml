@@ -67,6 +67,23 @@ jobs:
           key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
           path: ${{ steps.prepare.outputs.SDK_DIR }}
 
+      - name: Restore .config
+        id: restore_config
+        uses: actions/cache/restore@v4
+        with:
+          key: openwrt-${{ matrix.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
+          path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
+
+      - name: make manuconfig
+        if: steps.restore_config.outputs.cache-hit != 'true'
+        uses: mxschmitt/action-tmate@v3
+
+      - name: Save .config
+        uses: actions/cache/save@v4
+        with:
+          key: openwrt-${{ matrix.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
+          path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
+
       - uses: actions/checkout@v4
         with:
           repository: ${{ github.repository }}
@@ -79,10 +96,6 @@ jobs:
           SDK_DIR: ${{ steps.prepare.outputs.SDK_DIR }}
         run: |
           cd $SDK_DIR
-
-          cp ../this_repo/diffconfigs/$TARGET .config
-          make defconfig
-
           cp ../this_repo/build* ./
           chmod +x build.py
           mkdir ../ipk/
