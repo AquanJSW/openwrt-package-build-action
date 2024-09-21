@@ -40,6 +40,8 @@ jobs:
           wget -q $sdk_url
 
       - name: Deploy SDK
+        env:
+          SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
         run: |
           DIR_NAME=$(basename $SDK_FILENAME .tar.xz)
           tar -xJf $SDK_FILENAME
