@@ -74,7 +74,7 @@ jobs:
         run: |
           cd $SDK_DIR
 
-          cp ../this_repo/diffconfigs/$TARGET $SDK_DIR/.config
+          cp ../this_repo/diffconfigs/$TARGET .config
           make defconfig
 
           cp ../this_repo/build* ./
