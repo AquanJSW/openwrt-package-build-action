@@ -42,7 +42,7 @@ def main():
             subprocess.run(['wget', '-P', patch_dir, patch])
         subprocess.run(f'make package/{pkg.name}/compile -j'.split(), check=True)
         subprocess.run(
-            f'find bin/ -name *{pkg.name}*.ipk -type f -exec cp {{}} {args.ipk_dir}'.split(),
+            f'find bin/ -name *{pkg.name}*.ipk -type f -exec cp {{}} {args.ipk_dir} ;'.split(),
             check=True,
         )
 

@@ -52,7 +52,10 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
           make defconfig
+
+          # Pre-compile some common packages
           make package/toolchain/compile -j
+          make package/kernel/linux/compile -j
 
       - name: Cache SDK
         id: cache_sdk
