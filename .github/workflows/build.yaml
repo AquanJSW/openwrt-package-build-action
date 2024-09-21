@@ -70,14 +70,11 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-          cp ../this_repo/deploy_patches.sh .
-          chmod +x deploy_patches.sh
-          ./deploy_patches.sh
-
           make defconfig
-          make -j
-          mkdir ../ipk
-          find bin/packages/ -name *.ipk -type f -exec cp {} ../ipk \;
+
+          cp ../this_repo/build* ./
+          chmod +x build.py
+          ./build.py
 
       - name: Upload
         uses: actions/upload-artifact@v4
