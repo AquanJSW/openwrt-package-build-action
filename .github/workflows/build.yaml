@@ -39,8 +39,9 @@ jobs:
           sdk_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/$SDK_FILENAME"
           wget -q $sdk_url
           DIR_NAME=$(basename $SDK_FILENAME .tar.xz)
+          echo "DIR_NAME=$DIR_NAME"
           tar -xJf $SDK_FILENAME
-          echo "SDK_DIR=$DIR_NAME" >> $GITHUB_ENV
+          echo "SDK_DIR=$DIR_NAME" >> "$GITHUB_ENV"
 
       - name: Cache SDK
         id: cache_sdk
