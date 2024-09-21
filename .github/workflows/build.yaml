@@ -32,10 +32,11 @@ jobs:
       - name: Download and deploy OpenWrt SDK
         if: steps.restore_sdk.outputs.cache-hit != 'true'
         env:
+          VERSION: ${{ matrix.version }}
           SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
           TARGET: ${{ matrix.target0 }}/${{ matrix.target1 }}
         run: |
-          sdk_url="https://downloads.openwrt.org/releases/$SDK_FILENAME/targets/$TARGET/$SDK_FILENAME"
+          sdk_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/$SDK_FILENAME"
           wget $sdk_url
           DIR_NAME=$(basename $SDK_FILENAME .tar.xz)
           tar -xJf $SDK_FILENAME
