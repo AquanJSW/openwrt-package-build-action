@@ -4,16 +4,19 @@ jobs:
   build:
     strategy:
       matrix:
-        version: [23.05.4, 23.05.4]
-        target0: [mediatek, ramips]
-        target1: [mt7622, mt7621]
+        version: [23.05.4]
+        target:
+          - series: mediatek
+            arch: mt7622
+          - series: ramips
+            arch: mt7621
     runs-on: ubuntu-latest
     steps:
       - name: Get OpenWrt SDK checksum and URL
         id: prepare
         env:
           VERSION: ${{ matrix.version }}
-          TARGET: ${{ matrix.target0 }}/${{ matrix.target1 }}
+          TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
         run: |
           checksum_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/sha256sums"
           wget $checksum_url
@@ -28,7 +31,7 @@ jobs:
         id: restore_sdk
         uses: actions/cache/restore@v4
         with:
-          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
+          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
           path: ${{ steps.prepare.outputs.SDK_DIR }}
 
       - name: Download OpenWrt SDK
@@ -36,7 +39,7 @@ jobs:
         env:
           VERSION: ${{ matrix.version }}
           SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
-          TARGET: ${{ matrix.target0 }}/${{ matrix.target1 }}
+          TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
         run: |
           sdk_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/$SDK_FILENAME"
           wget -q $sdk_url
@@ -61,7 +64,7 @@ jobs:
         id: cache_sdk
         uses: actions/cache/save@v4
         with:
-          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
+          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
           path: ${{ steps.prepare.outputs.SDK_DIR }}
 
       - uses: actions/checkout@v4
@@ -72,7 +75,7 @@ jobs:
       - name: Build
         id: build
         env:
-          TARGET: ${{ matrix.target0 }}-${{ matrix.target1 }}
+          TARGET: ${{ matrix.target.series }}-${{ matrix.target.arch }}
           SDK_DIR: ${{ steps.prepare.outputs.SDK_DIR }}
         run: |
           cd $SDK_DIR
@@ -88,5 +91,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: openwrt-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}
+          name: openwrt-${{ matrix.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}
           path: ipk/*.ipk
