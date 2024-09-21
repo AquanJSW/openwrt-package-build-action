@@ -30,7 +30,9 @@ def main():
     for pkg in packages:
         pkg_dir = (
             subprocess.run(
-                f'find feeds/ -name {pkg.name} -type d'.split(), capture_output=True
+                f'find feeds/ -name {pkg.name} -type d'.split(),
+                capture_output=True,
+                check=True,
             )
             .stdout.decode()
             .split()[0]
@@ -38,9 +40,10 @@ def main():
         patch_dir = f'{pkg_dir}/patches'
         for patch in pkg.patches:
             subprocess.run(['wget', '-P', patch_dir, patch])
-        subprocess.run(f'make package/{pkg.name}/compile -j'.split())
+        subprocess.run(f'make package/{pkg.name}/compile -j V=s'.split(), check=True)
         subprocess.run(
-            f'find bin/ -name *{pkg.name}*.ipk -type f -exec cp {{}} {args.ipk_dir}'.split()
+            f'find bin/ -name *{pkg.name}*.ipk -type f -exec cp {{}} {args.ipk_dir}'.split(),
+            check=True,
         )
 
 
