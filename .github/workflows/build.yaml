@@ -43,7 +43,7 @@ jobs:
 
       - name: Cache SDK
         id: cache_sdk
-        uses: actions/cache/store@v4
+        uses: actions/cache/save@v4
         with:
           key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target0 }}-${{ matrix.target1 }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
           path: ${{ steps.prepare.outputs.SDK_FILENAME }}
