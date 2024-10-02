@@ -1,10 +1,15 @@
 name: Build packages for OpenWrt with patches
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: OpenWrt version like 23.05.4
+        required: true
 jobs:
   build:
     strategy:
       matrix:
-        version: [23.05.4]
         target:
           - series: mediatek
             arch: mt7622
@@ -15,7 +20,7 @@ jobs:
       - name: Get OpenWrt SDK checksum and URL
         id: prepare
         env:
-          VERSION: ${{ matrix.version }}
+          VERSION: ${{ inputs.version }}
           TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
         run: |
           checksum_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/sha256sums"
@@ -31,13 +36,13 @@ jobs:
         id: restore_sdk
         uses: actions/cache/restore@v4
         with:
-          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
+          key: openwrt-sdk-${{ inputs.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
           path: ${{ steps.prepare.outputs.SDK_DIR }}
 
       - name: Download OpenWrt SDK
         if: steps.restore_sdk.outputs.cache-hit != 'true'
         env:
-          VERSION: ${{ matrix.version }}
+          VERSION: ${{ inputs.version }}
           SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
           TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
         run: |
@@ -64,14 +69,14 @@ jobs:
         id: cache_sdk
         uses: actions/cache/save@v4
         with:
-          key: openwrt-sdk-${{ matrix.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
+          key: openwrt-sdk-${{ inputs.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
           path: ${{ steps.prepare.outputs.SDK_DIR }}
 
       - name: Restore .config
         id: restore_config
         uses: actions/cache/restore@v4
         with:
-          key: openwrt-${{ matrix.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
+          key: openwrt-${{ inputs.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
           path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
 
       - name: make manuconfig
@@ -81,7 +86,7 @@ jobs:
       - name: Save .config
         uses: actions/cache/save@v4
         with:
-          key: openwrt-${{ matrix.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
+          key: openwrt-${{ inputs.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
           path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
 
       - uses: actions/checkout@v4
@@ -104,5 +109,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: openwrt-${{ matrix.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}
+          name: openwrt-${{ inputs.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}
           path: ipk/*.ipk
