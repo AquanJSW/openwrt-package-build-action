@@ -20,6 +20,7 @@ jobs:
             arch: mt7621
             version: 23.05.4
     env:
+      VERSION: ${{ matrix.target.version }}
       TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +33,7 @@ jobs:
         run: |
           cd this_repo
           # Package To Build
-          echo "PTB_CHECKSUM=$(md5sum packages-to-build.list)" >> $GITHUB_OUTPUT
+          echo "PTB_CHECKSUM=$(md5sum packages-to-build.list | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
       - name: Get OpenWrt SDK checksum and URL
         id: prepare
@@ -69,7 +70,7 @@ jobs:
           
           # Insert custom feeds
           tmp_conf=$(mktemp)
-          cp ../this_repo/custom-feeds/${${{ matrix.target.version }}%.*}.conf $tmp_conf
+          cp ../this_repo/custom-feeds/${VERSION%.*}.conf $tmp_conf
           cat ./feeds.conf.default >> $tmp_conf
           cp $tmp_conf ./feeds.conf.default
 
