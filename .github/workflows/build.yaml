@@ -71,6 +71,7 @@ jobs:
           # Insert custom feeds
           tmp_conf=$(mktemp)
           cp ../this_repo/custom-feeds/${VERSION%.*}.conf $tmp_conf
+          echo >> $tmp_conf
           cat ./feeds.conf.default >> $tmp_conf
           cp $tmp_conf ./feeds.conf.default
 
