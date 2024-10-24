@@ -1,3 +1,0 @@
-- name: miniupnpd
-  patches:
-    - https://github.com/AquanJSW/miniupnpd/releases/download/modify-2.3.3/000-bypass-reserved-ip-check.patch

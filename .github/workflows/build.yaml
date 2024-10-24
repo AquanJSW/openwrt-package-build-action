@@ -2,9 +2,12 @@ name: Build packages for OpenWrt with patches
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: OpenWrt version like 23.05.4
-        required: true
+      menuconfig:
+        description: 'Run make menuconfig instead of using diffconfigs'
+        required: false
+        default: false
+        type: boolean
+  push:
 jobs:
   build:
     strategy:
@@ -12,17 +15,29 @@ jobs:
         target:
           - series: mediatek
             arch: mt7622
+            version: 23.05.4
           - series: ramips
             arch: mt7621
+            version: 23.05.4
+    env:
+      TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          path: this_repo
+        
+      - name: Calc packages-to-build checkcum
+        id: ptb
+        run: |
+          cd this_repo
+          # Package To Build
+          echo "PTB_CHECKSUM=$(md5sum packages-to-build.list)" >> $GITHUB_OUTPUT
+
       - name: Get OpenWrt SDK checksum and URL
         id: prepare
-        env:
-          VERSION: ${{ inputs.version }}
-          TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
         run: |
-          checksum_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/sha256sums"
+          checksum_url="https://downloads.openwrt.org/releases/${{ matrix.target.version }}/targets/$TARGET/sha256sums"
           wget $checksum_url
           sdk_filename=$(grep sdk sha256sums | awk -F'*' '{print $2}')
           sdk_checksum=$(grep sdk sha256sums | awk -F' ' '{print $1}')
@@ -31,82 +46,77 @@ jobs:
           echo "SDK_FILENAME=$sdk_filename" >> $GITHUB_OUTPUT
           echo "SDK_DIR=$sdk_dir" >> $GITHUB_OUTPUT
 
-      - name: Restore SDK cache
+      - name: Restore cache
         id: restore_sdk
         uses: actions/cache/restore@v4
         with:
-          key: openwrt-sdk-${{ inputs.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
-          path: ${{ steps.prepare.outputs.SDK_DIR }}
+          key: ${{ runner.os }}-openwrt-sdk-${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}-ptb-${{ steps.ptb.outputs.PTB_CHECKSUM }}
+          path: |
+            ${{ steps.prepare.outputs.SDK_DIR }}
+            ~/.cache/ccache
 
       - name: Download OpenWrt SDK
         if: steps.restore_sdk.outputs.cache-hit != 'true'
-        env:
-          VERSION: ${{ inputs.version }}
-          SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
-          TARGET: ${{ matrix.target.series }}/${{ matrix.target.arch }}
         run: |
-          sdk_url="https://downloads.openwrt.org/releases/$VERSION/targets/$TARGET/$SDK_FILENAME"
+          sdk_url="https://downloads.openwrt.org/releases/${{ matrix.target.version }}/targets/$TARGET/${{ steps.prepare.outputs.SDK_FILENAME }}"
           wget -q $sdk_url
 
       - name: Deploy SDK
         if: steps.restore_sdk.outputs.cache-hit != 'true'
-        env:
-          SDK_FILENAME: ${{ steps.prepare.outputs.SDK_FILENAME }}
-          SDK_DIR: ${{ steps.prepare.outputs.SDK_DIR }}
         run: |
-          tar -xJf $SDK_FILENAME
-          cd $SDK_DIR
+          tar xf ${{ steps.prepare.outputs.SDK_FILENAME }}
+          cd ${{ steps.prepare.outputs.SDK_DIR }}
+          
+          # Insert custom feeds
+          tmp_conf=$(mktemp)
+          cp ../this_repo/custom-feeds/${${{ matrix.target.version }}%.*}.conf $tmp_conf
+          cat ./feeds.conf.default >> $tmp_conf
+          cp $tmp_conf ./feeds.conf.default
+
           ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          cat ../this_repo/packages-to-build.list | xargs -n1 ./scripts/feeds install
           make defconfig
 
-          # Pre-compile some common packages
+          # Pre-compile some heavy common packages
           make package/toolchain/compile -j
           make package/kernel/linux/compile -j
 
-      - name: Cache SDK
-        id: cache_sdk
+      - name: Cache
         uses: actions/cache/save@v4
         with:
-          key: openwrt-sdk-${{ inputs.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}
-          path: ${{ steps.prepare.outputs.SDK_DIR }}
-
-      - name: Restore .config
-        id: restore_config
-        uses: actions/cache/restore@v4
-        with:
-          key: openwrt-${{ inputs.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
-          path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
-
-      - name: make manuconfig
-        if: steps.restore_config.outputs.cache-hit != 'true'
+          key: ${{ runner.os }}-openwrt-sdk-${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-${{ steps.prepare.outputs.SDK_CHECKSUM }}-ptb-${{ steps.ptb.outputs.PTB_CHECKSUM }}
+          path: |
+           ${{ steps.prepare.outputs.SDK_DIR }}
+           ~/.cache/ccache
+      
+      - name: Deploy .config
+        run: |
+          cp this_repo/diffconfigs/${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}.config ${{ steps.prepare.outputs.SDK_DIR }}/.config
+          cd ${{ steps.prepare.outputs.SDK_DIR }}
+          make defconfig
+          
+      - name: make menuconfig
+        if: ${{ inputs.menuconfig }}
         uses: mxschmitt/action-tmate@v3
-
-      - name: Save .config
-        uses: actions/cache/save@v4
-        with:
-          key: openwrt-${{ inputs.version }}-config-${{ matrix.target.series }}-${{ matrix.target.arch }}
-          path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
-
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository }}
-          path: this_repo
 
       - name: Build
         id: build
         env:
-          TARGET: ${{ matrix.target.series }}-${{ matrix.target.arch }}
           SDK_DIR: ${{ steps.prepare.outputs.SDK_DIR }}
         run: |
           cd $SDK_DIR
-          cp ../this_repo/build* ./
-          chmod +x build.py
+          cat ../this_repo/packages-to-build.list | xargs -I'{}' make 'package/{}/compile' -j
           mkdir ../ipk/
-          ./build.py ../ipk/
+          cat ../this_repo/artifact-patterns.list | xargs -n1 find bin/ -name | xargs -I'{}' cp '{}' ../ipk/
 
-      - name: Upload
+      - name: Upload ipks
         uses: actions/upload-artifact@v4
         with:
-          name: openwrt-${{ inputs.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}
+          name: openwrt-${{ matrix.target.VERSION }}-${{ matrix.target.series }}-${{ matrix.target.arch }}
           path: ipk/*.ipk
+      
+      - name: Upload .config
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-${{ matrix.target.VERSION }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-config
+          path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
