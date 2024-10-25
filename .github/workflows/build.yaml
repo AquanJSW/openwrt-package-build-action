@@ -95,12 +95,10 @@ jobs:
         id: deploy_config
         run: |
           cp this_repo/diffconfigs/${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}.diffconfig ${{ steps.prepare.outputs.SDK_DIR }}/.config
-          cd ${{ steps.prepare.outputs.SDK_DIR }}
-          make defconfig
         continue-on-error: true
           
       - name: make menuconfig
-        if: ${{ inputs.menuconfig }} || ${{ steps.deploy_config.outcome == 'failure' }}
+        if: ${{ inputs.menuconfig }} || ${{ steps.deploy_config.outcome != 'success' }}
         uses: mxschmitt/action-tmate@v3
 
       - name: Build
@@ -109,6 +107,7 @@ jobs:
           SDK_DIR: ${{ steps.prepare.outputs.SDK_DIR }}
         run: |
           cd $SDK_DIR
+          make defconfig
           cat ../this_repo/packages-to-build.list | xargs -I'{}' make 'package/{}/compile' -j
           mkdir ../ipk/
           cat ../this_repo/artifact-patterns.list | xargs -n1 find bin/ -name | xargs -I'{}' cp '{}' ../ipk/
