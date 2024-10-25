@@ -92,13 +92,15 @@ jobs:
            ~/.cache/ccache
       
       - name: Deploy .config
+        id: deploy_config
         run: |
-          cp this_repo/diffconfigs/${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}.config ${{ steps.prepare.outputs.SDK_DIR }}/.config
+          cp this_repo/diffconfigs/${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}.diffconfig ${{ steps.prepare.outputs.SDK_DIR }}/.config
           cd ${{ steps.prepare.outputs.SDK_DIR }}
           make defconfig
+        continue-on-error: true
           
       - name: make menuconfig
-        if: ${{ inputs.menuconfig }}
+        if: ${{ inputs.menuconfig }} || ${{ steps.deploy_config.outcome == 'failure' }}
         uses: mxschmitt/action-tmate@v3
 
       - name: Build
