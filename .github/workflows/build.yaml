@@ -117,8 +117,13 @@ jobs:
           name: openwrt-${{ matrix.target.VERSION }}-${{ matrix.target.series }}-${{ matrix.target.arch }}
           path: ipk/*.ipk
       
+      - name: Generate diffconfig
+        run: |
+          cd ${{ steps.prepare.outputs.SDK_DIR }}
+          ./scripts/diffconfig.sh > ../${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}.config
+      
       - name: Upload .config
         uses: actions/upload-artifact@v4
         with:
-          name: openwrt-${{ matrix.target.VERSION }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-config
-          path: ${{ steps.prepare.outputs.SDK_DIR }}/.config
+          name: openwrt-${{ matrix.target.VERSION }}-${{ matrix.target.series }}-${{ matrix.target.arch }}-diffconfig
+          path: ${{ matrix.target.version }}-${{ matrix.target.series }}-${{ matrix.target.arch }}.config
