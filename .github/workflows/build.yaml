@@ -52,7 +52,8 @@ jobs:
         uses: actions/cache/save@v4
         with:
           key: openwrt-sdk-${{ inputs.version }}-${{ inputs.target }}
-          path: ${{ download_sdk_tar.outputs.SDK_FILENAME }}
+          path: |
+            ${{ download_sdk_tar.outputs.SDK_FILENAME }}
       
       - name: Prepare SDK
         run: |
