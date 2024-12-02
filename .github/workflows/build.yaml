@@ -21,17 +21,17 @@ jobs:
     steps:
       - name: Prepare SDK
         run: |
-          series=$(echo ${{ github.event.inputs.target }} | cut -d'-' -f1)
-          arch=$(echo ${{ github.event.inputs.target }} | cut -d'-' -f2)
+          series=$(echo ${{ inputs.target }} | cut -d'-' -f1)
+          arch=$(echo ${{ inputs.target }} | cut -d'-' -f2)
 
           base_url="https://downloads.openwrt.org/releases/${{ inputs.version }}/targets/$series/$arch"
 
           checksum_file_url="$base_url/sha256sums"
           wget -q $checksum_file_url
 
-          echo "Downloading SDK from $base_url"
           sdk_filename=$(grep sdk sha256sums | cut -d'*' -f2)
           sdk_url="$base_url/$sdk_filename"
+          echo "Downloading SDK from $sdk_url"
           wget -q $sdk_url
 
           tar xf $sdk_filename
@@ -39,7 +39,7 @@ jobs:
 
           # Prepare feeds.conf.default
           version=${{ inputs.version }}
-          feeds_in=${{ github.action_path }}/.github/feeds.conf.default.in
+          feeds_in="$GITHUB_ACTION_PATH/.github/feeds.conf.default.in"
           sed "s/<version>/${version::-2}/g" $feeds_in > $sdk_dir/feeds.conf.default
 
           cd $sdk_dir
