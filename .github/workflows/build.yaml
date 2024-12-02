@@ -19,6 +19,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          path: this_repo
+
       - name: Prepare SDK
         run: |
           series=$(echo ${{ inputs.target }} | cut -d'-' -f1)
@@ -39,12 +43,12 @@ jobs:
 
           # Prepare feeds.conf.default
           version=${{ inputs.version }}
-          feeds_in="$GITHUB_ACTION_PATH/.github/feeds.conf.default.in"
+          feeds_in="this_repo/.github/feeds.conf.default.in"
           sed "s/<version>/${version::-2}/g" $feeds_in > $sdk_dir/feeds.conf.default
 
           cd $sdk_dir
           ./scripts/feeds update -a
-          cat ${{ github.action_path }}/.github/packages-to-build.list \
+          cat this_repo/.github/packages-to-build.list \
             | xargs -n1 ./scripts/feeds install
           
           echo "SDK_DIR=$sdk_dir" >> $GITHUB_ENV
@@ -55,12 +59,12 @@ jobs:
       - name: Build packages
         run: |
           cd $SDK_DIR
-          cat ${{ github.action_path }}/.github/package-to-build.list \
+          cat this_repo/.github/package-to-build.list \
             | xargs -I'{}' make package/{}/compile -j
           
           # Copy packages to artifacts
           mkdir -p ../artifacts/packages
-          cat ${{ github.action_path }}/.github/artifact-patterns.list \
+          cat this_repo/.github/artifact-patterns.list \
             | xargs -n1 find bin -name \
             | xargs -I'{}' cp '{}' ../artifacts/packages
 
