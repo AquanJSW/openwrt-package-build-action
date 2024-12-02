@@ -12,9 +12,9 @@ on:
         required: true
         type: choice
         options:
+          - ath79-nand
           - mediatek-mt7622
           - ramips-mt7621
-          - ath79-nand
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
         with:
           key: openwrt-sdk-${{ inputs.version }}-${{ inputs.target }}
           path: |
-            ${{ download_sdk_tar.outputs.SDK_FILENAME }}
+            ${{ steps.download_sdk_tar.outputs.SDK_FILENAME }}
       
       - name: Prepare SDK
         run: |
