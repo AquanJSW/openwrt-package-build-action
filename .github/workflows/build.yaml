@@ -59,12 +59,12 @@ jobs:
       - name: Build packages
         run: |
           cd $SDK_DIR
-          cat this_repo/.github/package-to-build.list \
+          cat ../this_repo/.github/package-to-build.list \
             | xargs -I'{}' make package/{}/compile -j
           
           # Copy packages to artifacts
           mkdir -p ../artifacts/packages
-          cat this_repo/.github/artifact-patterns.list \
+          cat ../this_repo/.github/artifact-patterns.list \
             | xargs -n1 find bin -name \
             | xargs -I'{}' cp '{}' ../artifacts/packages
 
