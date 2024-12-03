@@ -23,15 +23,7 @@ jobs:
         with:
           path: this_repo
       
-      - name: Restore SDK tar
-        id: restore_sdk_tar
-        uses: actions/cache/restore@v4
-        with:
-          key: openwrt-sdk-${{ inputs.version }}-${{ inputs.target }}
-
-      - name: Download SDK tar
-        id: download_sdk_tar
-        if: ${{ steps.restore_sdk_tar.outputs.cache-hit != 'true' }}
+      - name: Download SDK
         run: |
           series=$(echo ${{ inputs.target }} | cut -d'-' -f1)
           arch=$(echo ${{ inputs.target }} | cut -d'-' -f2)
@@ -46,17 +38,6 @@ jobs:
           echo "Downloading SDK from $sdk_url"
           wget -q $sdk_url
 
-          echo "SDK_FILENAME=$sdk_filename" >> $GITHUB_OUTPUT
-      
-      - name: Cache SDK tar
-        uses: actions/cache/save@v4
-        with:
-          key: openwrt-sdk-${{ inputs.version }}-${{ inputs.target }}
-          path: |
-            ${{ steps.download_sdk_tar.outputs.SDK_FILENAME }}
-      
-      - name: Prepare SDK
-        run: |
           tar xf $sdk_filename
           sdk_dir=$(tar tf $sdk_filename | head -n1 | cut -d'/' -f1)
 
