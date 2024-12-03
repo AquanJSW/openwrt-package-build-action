@@ -48,7 +48,7 @@ jobs:
 
           cd $sdk_dir
           ./scripts/feeds update -a
-          cat this_repo/.github/packages-to-build.list \
+          cat ../this_repo/.github/packages-to-build.list \
             | xargs -n1 ./scripts/feeds install
           
           echo "SDK_DIR=$sdk_dir" >> $GITHUB_ENV
